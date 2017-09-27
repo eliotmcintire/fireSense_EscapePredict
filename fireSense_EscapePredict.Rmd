@@ -2,7 +2,9 @@
 title: "fireSense_EscapePredict"
 author: "Jean Marchal (jean.d.marchal@gmail.com)"
 date: "September 2017"
-output: pdf_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 # Overview
@@ -30,34 +32,72 @@ Name|Default|Description
 `intervalRunModule`|`NA`|optional. Interval between two runs of this module, expressed in units of simulation time.
 |||
 
-```{r module_usage}
-library(igraph)
-library(SpaDES.core)
+```{r module usage example, eval = FALSE}
+library(magrittr)
+library(raster)
+library(SpaDES)
 
-moduleDir <- file.path(" # replace with empty string instead")
-inputDir <- file.path(moduleDir, "inputs") %>% reproducible::checkPath(create = TRUE)
-outputDir <- file.path(moduleDir, "outputs")
-cacheDir <- file.path(outputDir, "cache")
-times <- list(start = 0, end = 10)
-parameters <- list(
-  #.progress = list(type = "text", interval = 1), # for a progress bar
-  ## If there are further modules, each can have its own set of parameters:
-  #module1 = list(param1 = value1, param2 = value2),
-  #module2 = list(param1 = value1, param2 = value2)
-)
+set.seed(123)
+
+# Define simulation parameters
+times <- list(start = 1, end = 1, timeunit = "year")
 modules <- list("fireSense_EscapePredict")
-objects <- list()
 paths <- list(
-  cachePath = cacheDir,
-  modulePath = moduleDir,
-  inputPath = inputDir,
-  outputPath = outputDir
+  modulePath = spadesModulesDirectory
 )
 
-mySim <- simInit(times = times, params = parameters, modules = modules,
-                 objects = objects, paths = paths)
+# Create random weather and fire escape data
+  # data.frame
+  dataFireSense_EscapePredict <- data.frame(
+    weather = rnorm(1000, 150, 30),
+    escapeProb = rbinom(1000, 1, .5)
+  )
+  
+  nx <- ny <- 100L
+  
+  # raster
+  dataFireSense_EscapePredict <-
+    raster(nrows = ny, ncols = nx, xmn = -nx/2, xmx = nx/2, ymn = -ny/2, ymx = ny/2) %>%
+      gaussMap(scale = 300, var = 0.03, speedup = nx/5e2, inMemory = TRUE) %>%
+      stack %>% setNames("weather")
 
-spades(mySim)
+# Create a typical output of fireSense_EscapeFit
+fireSense_EscapeFitted <- glm(
+  formula = escapeProb ~ weather2,
+  family = binomial(),
+  data = data.frame(
+    weather2 = rnorm(1000, 150, 30),
+    escapeProb = rbinom(1000, 1, .5)
+  )
+)
+class(fireSense_EscapeFitted) <- c("fireSense_EscapeFit", class(fireSense_EscapeFitted))
+
+# Define module parameters
+parameters <- list(
+  fireSense_EscapePredict = list(
+    modelName = "fireSense_EscapeFitted",
+    data = "dataFireSense_EscapePredict",
+    mapping = list(weather2 = "weather") # One can use mapping to map variables
+                                         # in the formula of the fitted object
+                                         # to those in data. Here weather2
+                                         # (formula) is mapped to weather (data).
+  )
+)
+
+# Objects to pass from the global environment to the simList environment
+objects <- c("dataFireSense_EscapePredict", "fireSense_EscapeFitted")
+
+# Create the simList
+sim <- simInit(
+  times = times, 
+  params = parameters, 
+  modules = modules, 
+  objects = objects, 
+  paths = paths
+)
+
+sim <- spades(sim)
+sim$fireSense_EscapePredicted
 ```
 
 # Events
@@ -65,9 +105,6 @@ Events are scheduled as follows:
 
 - Module initiation
 - Make predictions
-
-## Saving
-TODO: Write what is saved. (there is currently nothing saved, but this may change in the future)
 
 # Data dependencies
 ## Input data

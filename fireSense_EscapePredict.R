@@ -115,16 +115,17 @@ fireSense_EscapePredictInit <- function(sim) {
 fireSense_EscapePredictRun <- function(sim) {
   
   moduleName <- current(sim)$moduleName
+  currentTime <- time(sim, timeunit(sim))
+  endTime <- end(sim, timeunit(sim))
   
   ## Toolbox: set of functions used internally by the module
     ## Raster predict function
       fireSense_EscapePredictRaster <- function(model, data, sim) {
         
         model %>%
-          model.matrix(c(data, sim[[P(sim)$modelName]]$knots)) %>%
-          `%*%` (sim[[P(sim)$modelName]]$coef) %>%
-          drop %>% sim[[P(sim)$modelName]]$family$linkinv(.) %>%
-          `*` (P(sim)$f)
+          model.matrix(data) %>%
+          `%*%` (coef(sim[[P(sim)$modelName]])) %>%
+          drop %>% sim[[P(sim)$modelName]]$family$linkinv(.)
         
       }
   
@@ -178,16 +179,19 @@ fireSense_EscapePredictRun <- function(sim) {
   
   if (all(unlist(lapply(allxy, function(x) is.vector(envData[[x]]))))) {
     
-    sim$fireSense_EscapePredicted <- (formula %>%
-                                           model.matrix(envData) %>%
-                                           `%*%` (sim[[P(sim)$modelName]]$coef) %>%
-                                           drop %>% sim[[P(sim)$modelName]]$family$linkinv(.)) %>%
-      `*` (P(sim)$f)
+    sim$fireSense_EscapePredicted[as.character(currentTime)] <- list(
+      formula %>%
+        model.matrix(envData) %>%
+        `%*%` (coef(sim[[P(sim)$modelName]])) %>%
+        drop %>% sim[[P(sim)$modelName]]$family$linkinv(.)
+    )
     
   } else if (all(unlist(lapply(allxy, function(x) is(envData[[x]], "RasterLayer"))))) {
     
-    sim$fireSense_EscapePredicted <- mget(allxy, envir = envData, inherits = FALSE) %>%
-      stack %>% predict(model = formula, fun = fireSense_EscapePredictRaster, na.rm = TRUE, sim = sim)
+    sim$fireSense_EscapePredicted[as.character(currentTime)] <- list(
+      mget(allxy, envir = envData, inherits = FALSE) %>%
+        stack %>% predict(model = formula, fun = fireSense_EscapePredictRaster, na.rm = TRUE, sim = sim)  
+    )
     
   } else {
     
@@ -208,8 +212,8 @@ fireSense_EscapePredictRun <- function(sim) {
     }
   }
   
-  if (!is.na(P(sim)$intervalRunModule))
-    sim <- scheduleEvent(sim, time(sim) + P(sim)$intervalRunModule, moduleName, "run")
+  if (!is.na(P(sim)$intervalRunModule) && (currentTime + P(sim)$intervalRunModule) <= endTime) # Assumes time only moves forward
+    sim <- scheduleEvent(sim, currentTime + P(sim)$intervalRunModule, moduleName, "run")
   
   invisible(sim)
   
