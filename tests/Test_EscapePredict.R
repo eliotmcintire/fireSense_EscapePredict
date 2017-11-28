@@ -2,12 +2,13 @@ library(magrittr)
 library(raster)
 library(SpaDES)
 
+modulePath <- "~/Documents/GitHub/McIntire-lab/modulesPrivate/"
 
 # Define simulation parameters
 times <- list(start = 1, end = 2, timeunit = "year")
 modules <- list("fireSense_EscapePredict")
 paths <- list(
-  modulePath = "~/Documents/GitHub/McIntire-lab/modulesPrivate/"
+  modulePath = modulePath
 )
 
 # Create random weather and fire escape data
@@ -21,7 +22,7 @@ paths <- list(
   nx <- ny <- 100L
   dataFireSense_EscapePredict <-
     raster(nrows = ny, ncols = nx, xmn = -nx/2, xmx = nx/2, ymn = -ny/2, ymx = ny/2) %>%
-    gaussMap(scale = 300, var = 0.03, speedup = nx/5e2, inMemory = TRUE) %>%
+    gaussMap(scale = 20, var = 100, speedup = nx/5e2, inMemory = TRUE) %>%
     stack %>% setNames("weather")
 
   # Create a typical output of fireSense_EscapeFit
@@ -29,7 +30,7 @@ paths <- list(
     formula = escapeProb ~ weather,
     family = binomial(),
     data = data.frame(
-      weather = rnorm(1000, 150, 30),
+      weather = rnorm(1000, 150, 100),
       escapeProb = rbinom(1000, 1, .5)
     )
   )
@@ -57,5 +58,5 @@ sim <- simInit(
 )
 
 sim <- spades(sim)
-x11(); plot(sim$fireSense_EscapePredicted[[1]])
+x11(); plot(sim$fireSense_EscapePredicted[["1"]])
 
