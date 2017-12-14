@@ -4,8 +4,10 @@ library(SpaDES)
 
 modulePath <- "~/Documents/GitHub/McIntire-lab/modulesPrivate/"
 
+start <- end <- 1
+
 # Define simulation parameters
-times <- list(start = 1, end = 2, timeunit = "year")
+times <- list(start = start, end = end, timeunit = "year")
 modules <- list("fireSense_EscapePredict")
 paths <- list(
   modulePath = modulePath
@@ -13,17 +15,26 @@ paths <- list(
 
 # Create random weather and fire escape data
   # data.frame
-  dataFireSense_EscapePredict <- data.frame(
-    weather = rnorm(1000, 150, 30),
-    escapeProb = rbinom(1000, 1, .5)
-  )
+  dataFireSense_EscapePredict <- setNames(
+    list(
+      data.frame(
+        weather = rnorm(1000, 150, 30),
+        escapeProb = rbinom(1000, 1, .5)
+      )  
+    ),
+    nm = start
+  ) 
   
   # raster
   nx <- ny <- 100L
-  dataFireSense_EscapePredict <-
-    raster(nrows = ny, ncols = nx, xmn = -nx/2, xmx = nx/2, ymn = -ny/2, ymx = ny/2) %>%
-    gaussMap(scale = 20, var = 100, speedup = nx/5e2, inMemory = TRUE) %>%
-    stack %>% setNames("weather")
+  dataFireSense_EscapePredict <- setNames(
+    list(
+      raster(nrows = ny, ncols = nx, xmn = -nx/2, xmx = nx/2, ymn = -ny/2, ymx = ny/2) %>%
+        gaussMap(scale = 20, var = 100, speedup = nx/5e2, inMemory = TRUE) %>%
+        stack %>% setNames("weather")
+    ),
+    nm = start
+  )
 
   # Create a typical output of fireSense_EscapeFit
   fireSense_EscapeFitted <- glm(
@@ -58,5 +69,5 @@ sim <- simInit(
 )
 
 sim <- spades(sim)
-x11(); plot(sim$fireSense_EscapePredicted[["1"]])
+x11(); plot(sim$fireSense_EscapePredicted[[as.character(start)]])
 

@@ -29,9 +29,12 @@ defineModule(sim, list(
                             variables present in the model formula. `data`
                             objects can be data.frames, RasterStacks or
                             RasterLayers. However, data.frames cannot be mixed
-                            with objects of other classes. If variables are not
-                            found in `data` objects, they are searched in  the
-                            `simList` environment."),
+                            with objects of other classes. For time series, 
+                            `data` objects must be named lists of data.frames, 
+                            RasterStacks or RasterLayers, named starting with 
+                            `start(simList)` and ending with `end(simList)` such
+                            that variables can be matched for every 
+                            `timeunit(simList)` of the simulation."),
     defineParameter(name = "mapping", class = "character, list", default = NULL,
                     desc = "optional named vector or list of character strings
                             mapping one or more variables in the model formula
@@ -130,23 +133,20 @@ fireSense_EscapePredictRun <- function(sim)
   # Create a container to hold the data
   envData <- new.env(parent = envir(sim))
   on.exit(rm(envData))
-    
-  # Load inputs in the data container
-  list2env(as.list(envir(sim)), envir = envData)
   
   for (x in P(sim)$data) 
   {
-    if (!is.null(sim[[x]]))
+    if (!is.null(sim[[x]][[currentTime]]))
     {
-      if (is.data.frame(sim[[x]]))
+      if (is.data.frame(sim[[x]][[currentTime]]))
       {
-        list2env(sim[[x]], envir = envData)
+        list2env(sim[[x]][[currentTime]], envir = envData)
       } 
-      else if (is(sim[[x]], "RasterStack")) 
+      else if (is(sim[[x]][[currentTime]], "RasterStack")) 
       {
-        list2env(setNames(unstack(sim[[x]]), names(sim[[x]])), envir = envData)
+        list2env(setNames(unstack(sim[[x]][[currentTime]]), names(sim[[x]][[currentTime]])), envir = envData)
       }
-      else if (is(sim[[x]], "RasterLayer"))
+      else if (is(sim[[x]][[currentTime]], "RasterLayer"))
       {
         # Do nothing
       } 
