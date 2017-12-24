@@ -52,7 +52,7 @@ parameters <- list(
   fireSense_EscapePredict = list(
     modelName = "fireSense_EscapeFitted",
     data = "dataFireSense_EscapePredict",
-    intervalRunModule = 1
+    .runInterval = 1
   )
 )
 

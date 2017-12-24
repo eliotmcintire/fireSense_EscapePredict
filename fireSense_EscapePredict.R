@@ -210,6 +210,7 @@ fireSense_EscapePredictRun <- function(sim)
     }
   }
   
+  if (!is.na(P(sim)$.runInterval))
     sim <- scheduleEvent(sim, currentTime + P(sim)$.runInterval, moduleName, "run")
   
   invisible(sim)
