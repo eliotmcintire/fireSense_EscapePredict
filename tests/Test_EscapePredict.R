@@ -2,7 +2,7 @@ library(magrittr)
 library(raster)
 library(SpaDES)
 
-modulePath <- "~/Documents/GitHub/McIntire-lab/modulesPrivate/"
+modulePath <- normalizePath("..")
 
 start <- end <- 1
 
@@ -69,5 +69,5 @@ sim <- simInit(
 )
 
 sim <- spades(sim)
-x11(); plot(sim$fireSense_EscapePredicted[[as.character(start)]])
+x11(); plot(sim$fireSense_EscapePredicted)
 
