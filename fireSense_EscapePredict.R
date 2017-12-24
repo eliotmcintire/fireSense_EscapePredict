@@ -136,19 +136,19 @@ fireSense_EscapePredictRun <- function(sim)
   
   for (x in P(sim)$data) 
   {
-    if (!is.null(sim[[x]][[as.character(currentTime)]]))
+    if (!is.null(sim[[x]]))
     {
-      if (is.data.frame(sim[[x]][[as.character(currentTime)]]))
+      if (is.data.frame(sim[[x]]))
       {
-        list2env(sim[[x]][[as.character(currentTime)]], envir = envData)
+        list2env(sim[[x]], envir = envData)
       } 
-      else if (is(sim[[x]][[as.character(currentTime)]], "RasterStack")) 
+      else if (is(sim[[x]], "RasterStack")) 
       {
-        list2env(setNames(unstack(sim[[x]][[as.character(currentTime)]]), names(sim[[x]][[as.character(currentTime)]])), envir = envData)
+        list2env(setNames(unstack(sim[[x]]), names(sim[[x]])), envir = envData)
       }
-      else if (is(sim[[x]][[as.character(currentTime)]], "RasterLayer"))
+      else if (is(sim[[x]], "RasterLayer"))
       {
-        # Do nothing
+        next
       } 
       else stop(paste0(moduleName, "> '", x, "' is not a data.frame, a RasterLayer or a RasterStack."))
     }
