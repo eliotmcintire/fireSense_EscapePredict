@@ -43,6 +43,10 @@ defineModule(sim, list(
     defineParameter(name = ".runInterval", class = "numeric", default = NA, 
                     desc = "optional. Interval between two runs of this module,
                             expressed in units of simulation time."),
+    defineParameter(name = ".saveInitialTime", class = "numeric", default = NA, 
+                    desc = "optional. When to start saving output to a file."),
+    defineParameter(name = ".saveInterval", class = "numeric", default = NA, 
+                    desc = "optional. Interval between save events."),
     defineParameter(".useCache", "numeric", FALSE, NA, NA, "Should this entire module be run with caching activated? This is generally intended for data-type modules, where stochasticity and time are not relevant")
   ),
   inputObjects = rbind(
@@ -75,20 +79,7 @@ doEvent.fireSense_EscapePredict = function(sim, eventTime, eventType, debug = FA
     eventType,
     init = { sim <- sim$fireSense_EscapePredictInit(sim) },
     run = { sim <- sim$fireSense_EscapePredictRun(sim) },
-    save = {
-      # ! ----- EDIT BELOW ----- ! #
-      # do stuff for this event
-      
-      # e.g., call your custom functions/methods here
-      # you can define your own methods below this `doEvent` function
-      
-      # schedule future event(s)
-      
-      # e.g.,
-      # sim <- scheduleEvent(sim, time(sim) + increment, "fireSense_EscapeFit", "save")
-      
-      # ! ----- STOP EDITING ----- ! #
-    },
+    save = { sim <- sim$fireSense_EscapePredictSave(sim) },
     warning(paste("Undefined event type: '", current(sim)[1, "eventType", with = FALSE],
                   "' in module '", current(sim)[1, "moduleName", with = FALSE], "'", sep = ""))
   )
@@ -105,6 +96,10 @@ doEvent.fireSense_EscapePredict = function(sim, eventTime, eventType, debug = FA
 fireSense_EscapePredictInit <- function(sim)
 {
   sim <- scheduleEvent(sim, eventTime = P(sim)$.runInitialTime, current(sim)$moduleName, "run")
+  
+  if (!is.na(P(sim)$.saveInitialTime))
+    sim <- scheduleEvent(sim, P(sim)$.saveInitialTime, moduleName, "save", .last())
+  
   invisible(sim)
 }
 
@@ -216,13 +211,20 @@ fireSense_EscapePredictRun <- function(sim)
   invisible(sim)
 }
 
-### template for save events
 fireSense_EscapePredictSave <- function(sim)
 {
-  # ! ----- EDIT BELOW ----- ! #
-  # do stuff for this event
-  sim <- saveFiles(sim)
+  moduleName <- current(sim)$moduleName
+  timeUnit <- timeunit(sim)
+  currentTime <- time(sim, timeUnit)
   
-  # ! ----- STOP EDITING ----- ! #
-  return(invisible(sim))
+  saveRDS(
+    sim$fireSense_EscapePredicted, 
+    file = file.path(paths(sim)$out, paste0("fireSense_EscapePredicted", timeUnit, currentTime, ".rds"))
+  )
+  
+  if (!is.na(P(sim)$.saveInterval))
+    sim <- scheduleEvent(sim, currentTime + P(sim)$.saveInterval, moduleName, "save", .last())
+  
+  invisible(sim)
 }
+
