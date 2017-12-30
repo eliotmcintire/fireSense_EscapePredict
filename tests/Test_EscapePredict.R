@@ -15,26 +15,16 @@ paths <- list(
 
 # Create random weather and fire escape data
   # data.frame
-  dataFireSense_EscapePredict <- setNames(
-    list(
-      data.frame(
-        weather = rnorm(1000, 150, 30),
-        escapeProb = rbinom(1000, 1, .5)
-      )  
-    ),
-    nm = start
-  ) 
-  
+dataFireSense_EscapePredict <- data.frame(
+  weather = rnorm(1000, 150, 30),
+  escapeProb = rbinom(1000, 1, .5)
+)  
+
   # raster
   nx <- ny <- 100L
-  dataFireSense_EscapePredict <- setNames(
-    list(
-      raster(nrows = ny, ncols = nx, xmn = -nx/2, xmx = nx/2, ymn = -ny/2, ymx = ny/2) %>%
+  dataFireSense_EscapePredict <- raster(nrows = ny, ncols = nx, xmn = -nx/2, xmx = nx/2, ymn = -ny/2, ymx = ny/2) %>%
         gaussMap(scale = 20, var = 100, speedup = nx/5e2, inMemory = TRUE) %>%
         stack %>% setNames("weather")
-    ),
-    nm = start
-  )
 
   # Create a typical output of fireSense_EscapeFit
   fireSense_EscapeFitted <- glm(
