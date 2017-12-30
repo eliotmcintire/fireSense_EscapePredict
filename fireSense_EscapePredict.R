@@ -169,19 +169,15 @@ fireSense_EscapePredictRun <- function(sim)
   
   if (all(unlist(lapply(allxy, function(x) is.vector(envData[[x]]))))) 
   {
-    sim$fireSense_EscapePredicted[as.character(currentTime)] <- list(
-      formula %>%
-        model.matrix(envData) %>%
-        `%*%` (coef(sim[[P(sim)$modelName]])) %>%
-        drop %>% sim[[P(sim)$modelName]]$family$linkinv(.)
-    )
+    sim$fireSense_EscapePredicted <- formula %>%
+      model.matrix(envData) %>%
+      `%*%` (coef(sim[[P(sim)$modelName]])) %>%
+      drop %>% sim[[P(sim)$modelName]]$family$linkinv(.)
   } 
   else if (all(unlist(lapply(allxy, function(x) is(envData[[x]], "RasterLayer"))))) 
   {
-    sim$fireSense_EscapePredicted[as.character(currentTime)] <- list(
-      mget(allxy, envir = envData, inherits = FALSE) %>%
-        stack %>% predict(model = formula, fun = fireSense_EscapePredictRaster, na.rm = TRUE, sim = sim)  
-    )
+    sim$fireSense_EscapePredicted <- mget(allxy, envir = envData, inherits = FALSE) %>%
+        stack %>% predict(model = formula, fun = fireSense_EscapePredictRaster, na.rm = TRUE, sim = sim)
   } 
   else 
   {
