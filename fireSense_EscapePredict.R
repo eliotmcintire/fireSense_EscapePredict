@@ -112,15 +112,14 @@ escapePredictRun <- function(sim)
   currentTime <- time(sim, timeunit(sim))
   endTime <- end(sim, timeunit(sim))
   
-  ## Toolbox: set of functions used internally by the module
-    ## Raster predict function
-      escapePredictRaster <- function(model, data, sim)
-      {
-        model %>%
-          model.matrix(data) %>%
-          `%*%` (coef(sim[[P(sim)$modelName]])) %>%
-          drop %>% sim[[P(sim)$modelName]]$family$linkinv(.)
-      }
+  ## Toolbox: set of functions used internally by escapePredictRun
+    escapePredictRaster <- function(model, data, sim)
+    {
+      model %>%
+        model.matrix(data) %>%
+        `%*%` (coef(sim[[P(sim)$modelName]])) %>%
+        drop %>% sim[[P(sim)$modelName]]$family$linkinv(.)
+    }
   
   # Load inputs in the data container
   list2env(as.list(envir(sim)), envir = mod)
@@ -211,7 +210,7 @@ escapePredictSave <- function(sim)
   
   saveRDS(
     sim$fireSense_EscapePredicted, 
-    file = file.path(paths(sim)$out, paste0("fireSense_EscapePredicted", timeUnit, currentTime, ".rds"))
+    file = file.path(paths(sim)$out, paste0("fireSense_EscapePredicted_", timeUnit, currentTime, ".rds"))
   )
   
   if (!is.na(P(sim)$.saveInterval))
