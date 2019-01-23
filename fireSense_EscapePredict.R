@@ -64,7 +64,7 @@ defineModule(sim, list(
     )
   ),
   outputObjects = createsOutput(
-    objectName = "escapePredicted",
+    objectName = "fireSense_EscapePredicted",
     objectClass = NA_character_,
     desc = "An object whose class depends on that of the inputs, could be a RasterLayer or a vector of type numeric."
   )
@@ -165,14 +165,14 @@ escapePredictRun <- function(sim)
   
   if (all(unlist(lapply(allxy, function(x) is.vector(mod[[x]]))))) 
   {
-    sim$escapePredicted <- formula %>%
+    sim$fireSense_EscapePredicted <- formula %>%
       model.matrix(mod) %>%
       `%*%` (coef(sim[[P(sim)$modelName]])) %>%
       drop %>% sim[[P(sim)$modelName]]$family$linkinv(.)
   } 
   else if (all(unlist(lapply(allxy, function(x) is(mod[[x]], "RasterLayer"))))) 
   {
-    sim$escapePredicted <- mget(allxy, envir = mod, inherits = FALSE) %>%
+    sim$fireSense_EscapePredicted <- mget(allxy, envir = mod, inherits = FALSE) %>%
         stack %>% predict(model = formula, fun = fireSense_EscapePredictRaster, na.rm = TRUE, sim = sim)
   } 
   else 
@@ -210,7 +210,7 @@ escapePredictSave <- function(sim)
   currentTime <- time(sim, timeUnit)
   
   saveRDS(
-    sim$escapePredicted, 
+    sim$fireSense_EscapePredicted, 
     file = file.path(paths(sim)$out, paste0("fireSense_EscapePredicted", timeUnit, currentTime, ".rds"))
   )
   
