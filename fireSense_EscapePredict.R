@@ -77,9 +77,9 @@ doEvent.fireSense_EscapePredict = function(sim, eventTime, eventType, debug = FA
 {
   switch(
     eventType,
-    init = { sim <- sim$fireSense_EscapePredictInit(sim) },
-    run = { sim <- sim$fireSense_EscapePredictRun(sim) },
-    save = { sim <- sim$fireSense_EscapePredictSave(sim) },
+    init = { sim <- escapePredictInit(sim) },
+    run = { sim <- escapePredictRun(sim) },
+    save = { sim <- escapePredictSave(sim) },
     warning(paste("Undefined event type: '", current(sim)[1, "eventType", with = FALSE],
                   "' in module '", current(sim)[1, "moduleName", with = FALSE], "'", sep = ""))
   )
@@ -93,7 +93,7 @@ doEvent.fireSense_EscapePredict = function(sim, eventTime, eventType, debug = FA
 #   - keep event functions short and clean, modularize by calling subroutines from section below.
 
 ### template initialization
-fireSense_EscapePredictInit <- function(sim)
+escapePredictInit <- function(sim)
 {
   sim <- scheduleEvent(sim, eventTime = P(sim)$.runInitialTime, current(sim)$moduleName, "run")
   
@@ -104,7 +104,7 @@ fireSense_EscapePredictInit <- function(sim)
 }
 
 
-fireSense_EscapePredictRun <- function(sim)
+escapePredictRun <- function(sim)
 {
   stopifnot(is(sim[[P(sim)$modelName]], "fireSense_EscapeFit"))
   
@@ -207,7 +207,7 @@ fireSense_EscapePredictRun <- function(sim)
   invisible(sim)
 }
 
-fireSense_EscapePredictSave <- function(sim)
+escapePredictSave <- function(sim)
 {
   moduleName <- current(sim)$moduleName
   timeUnit <- timeunit(sim)
