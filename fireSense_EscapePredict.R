@@ -114,7 +114,7 @@ escapePredictRun <- function(sim)
   
   ## Toolbox: set of functions used internally by the module
     ## Raster predict function
-      fireSense_EscapePredictRaster <- function(model, data, sim)
+      escapePredictRaster <- function(model, data, sim)
       {
         model %>%
           model.matrix(data) %>%
@@ -173,7 +173,7 @@ escapePredictRun <- function(sim)
   else if (all(unlist(lapply(allxy, function(x) is(mod[[x]], "RasterLayer"))))) 
   {
     sim$fireSense_EscapePredicted <- mget(allxy, envir = mod, inherits = FALSE) %>%
-        stack %>% predict(model = formula, fun = fireSense_EscapePredictRaster, na.rm = TRUE, sim = sim)
+        stack %>% predict(model = formula, fun = escapePredictRaster, na.rm = TRUE, sim = sim)
   } 
   else 
   {
