@@ -3,7 +3,7 @@
 # please specify the package you need to run the sim function in the test files.
 
 # to test all the test files in the tests folder:
-test_dir(" # replace with empty string insteadfireSense_EscapePredict/tests/testthat")
+test_dir("fireSense_EscapePredict/tests/testthat")
 
 # Alternative, you can use test_file to test individual test file, e.g.:
-test_file(" # replace with empty string insteadfireSense_EscapePredict/tests/testthat/test-template.R")
+test_file("fireSense_EscapePredict/tests/testthat/test-template.R")
