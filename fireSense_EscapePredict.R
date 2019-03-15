@@ -132,15 +132,15 @@ escapePredictRun <- function(sim)
       {
         list2env(sim[[x]], envir = mod)
       } 
-      else if (is(sim[[x]], "RasterStack")) 
+      else if (is(sim[[x]], "RasterStack") || is(sim[[x]], "RasterBrick")) 
       {
         list2env(setNames(unstack(sim[[x]]), names(sim[[x]])), envir = mod)
       }
       else if (is(sim[[x]], "RasterLayer"))
       {
-        next
+        mod[[x]] <- sim[[x]]
       } 
-      else stop(moduleName, "> '", x, "' is not a data.frame, a RasterLayer or a RasterStack.")
+      else stop(moduleName, "> '", x, "' is not a data.frame, a RasterLayer, a RasterStack or a RasterBrick.")
     }
   }
 
