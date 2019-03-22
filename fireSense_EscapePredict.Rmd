@@ -107,7 +107,7 @@ sim$fireSense_EscapePredicted
 # Events
 Events are scheduled as follows:
 
-- Module initiation
+- Module initialisation
 - Make predictions
 
 # Data dependencies
