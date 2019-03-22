@@ -102,10 +102,10 @@ doEvent.fireSense_EscapePredict = function(sim, eventTime, eventType, debug = FA
 ### template initialization
 escapePredictInit <- function(sim)
 {
-  if (!is(sim[[P(sim)$modelObjName]], "fireSense_EscapeFit"))
-    stop("fireSense_EscapePredict> '", P(sim)$modelObjName, "' should be of class 'fireSense_EscapeFit.")
-  
   moduleName <- current(sim)$moduleName
+  
+  if (!is(sim[[P(sim)$modelObjName]], "fireSense_EscapeFit"))
+    stop(moduleName, "> '", P(sim)$modelObjName, "' should be of class 'fireSense_EscapeFit.")
   
   ## Toolbox: set of functions used internally by escapePredictRun
   escapePredictRaster <- function(model, data, sim)
