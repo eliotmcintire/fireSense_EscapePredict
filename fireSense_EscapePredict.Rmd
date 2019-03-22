@@ -25,7 +25,7 @@ downloadModule(moduleName, path = spadesModulesDirectory)
 ## Module parameters
 Name|Default|Description
 ----|:-------|---------------------------------------------------------------------
-`modelName`|`"fireSense_EscapeFitted"`|name of the object of class fireSense_EscapeFit describing the statistical model used for predictions.
+`modelObjName`|`"fireSense_EscapeFitted"`|name of the object of class fireSense_EscapeFit describing the statistical model used for predictions.
 `data`|`"dataFireSense_EscapePredict"`|a character vector indicating the names of objects in the `simList` environment in which to look for variables present in the model formula. `data` objects can be data.frames, RasterStacks or RasterLayers. However, data.frames cannot be mixed with objects of other classes. If variables are not found in `data` objects, they are searched in the `simList` environment.
 `mapping`|`NULL`|optional named vector or list of character strings mapping one or more variables in the model formula to those in `data` objects.
 `.runInitialTime`|`start(simList)`|when to start this module? By default, the start time of the simulation.
@@ -40,6 +40,8 @@ library(raster)
 library(SpaDES)
 
 set.seed(123)
+
+spadesModulesDirectory <- ".."
 
 # Define simulation parameters
 times <- list(start = 1, end = 1, timeunit = "year")
@@ -77,7 +79,7 @@ class(fireSense_EscapeFitted) <- c("fireSense_EscapeFit", class(fireSense_Escape
 # Define module parameters
 parameters <- list(
   fireSense_EscapePredict = list(
-    modelName = "fireSense_EscapeFitted",
+    modelObjName = "fireSense_EscapeFitted",
     data = "dataFireSense_EscapePredict",
     mapping = list(weather2 = "weather") # One can use mapping to map variables
                                          # in the formula of the fitted object

@@ -17,7 +17,7 @@ defineModule(sim, list(
   reqdPkgs = list("magrittr", "raster"),
   parameters = rbind(
     #defineParameter("paramName", "paramClass", value, min, max, "parameter description"),
-    defineParameter(name = "modelName", class = "character", 
+    defineParameter(name = "modelObjName", class = "character", 
                     default = "fireSense_EscapeFitted",
                     desc = "name of the object of class fireSense_EscapeFit
                             describing the statistical model used for
@@ -77,7 +77,14 @@ doEvent.fireSense_EscapePredict = function(sim, eventTime, eventType, debug = FA
 {
   switch(
     eventType,
-    init = { sim <- escapePredictInit(sim) },
+    init = {
+      sim <- escapePredictInit(sim) 
+      
+      sim <- scheduleEvent(sim, eventTime = P(sim)$.runInitialTime, current(sim)$moduleName, "run")
+      
+      if (!is.na(P(sim)$.saveInitialTime))
+        sim <- scheduleEvent(sim, P(sim)$.saveInitialTime, moduleName, "save", .last())
+    },
     run = { sim <- escapePredictRun(sim) },
     save = { sim <- escapePredictSave(sim) },
     warning(paste("Undefined event type: '", current(sim)[1, "eventType", with = FALSE],
@@ -95,34 +102,22 @@ doEvent.fireSense_EscapePredict = function(sim, eventTime, eventType, debug = FA
 ### template initialization
 escapePredictInit <- function(sim)
 {
-  sim <- scheduleEvent(sim, eventTime = P(sim)$.runInitialTime, current(sim)$moduleName, "run")
-  
-  if (!is.na(P(sim)$.saveInitialTime))
-    sim <- scheduleEvent(sim, P(sim)$.saveInitialTime, moduleName, "save", .last())
-  
-  invisible(sim)
-}
-
-
-escapePredictRun <- function(sim)
-{
-  stopifnot(is(sim[[P(sim)$modelName]], "fireSense_EscapeFit"))
+  if (!is(sim[[P(sim)$modelObjName]], "fireSense_EscapeFit"))
+    stop("fireSense_EscapePredict> '", P(sim)$modelObjName, "' should be of class 'fireSense_EscapeFit.")
   
   moduleName <- current(sim)$moduleName
-  currentTime <- time(sim, timeunit(sim))
-  endTime <- end(sim, timeunit(sim))
   
   ## Toolbox: set of functions used internally by escapePredictRun
-    escapePredictRaster <- function(model, data, sim)
-    {
-      model %>%
-        model.matrix(data) %>%
-        `%*%` (coef(sim[[P(sim)$modelName]])) %>%
-        drop %>% sim[[P(sim)$modelName]]$family$linkinv(.)
-    }
+  escapePredictRaster <- function(model, data, sim)
+  {
+    model %>%
+      model.matrix(data) %>%
+      `%*%` (coef(sim[[P(sim)$modelObjName]])) %>%
+      drop %>% sim[[P(sim)$modelObjName]]$family$linkinv(.)
+  }
   
   # Load inputs in the data container
-  list2env(as.list(envir(sim)), envir = mod)
+  # list2env(as.list(envir(sim)), envir = mod)
   
   for (x in P(sim)$data) 
   {
@@ -143,8 +138,8 @@ escapePredictRun <- function(sim)
       else stop(moduleName, "> '", x, "' is not a data.frame, a RasterLayer, a RasterStack or a RasterBrick.")
     }
   }
-
-  terms <- delete.response(terms.formula(sim[[P(sim)$modelName]]$formula))
+  
+  terms <- delete.response(terms.formula(sim[[P(sim)$modelObjName]]$formula))
   
   ## Mapping variables names to data
   if (!is.null(P(sim)$mapping)) 
@@ -164,15 +159,21 @@ escapePredictRun <- function(sim)
   
   if (all(unlist(lapply(allxy, function(x) is.vector(mod[[x]]))))) 
   {
-    sim$fireSense_EscapePredicted <- formula %>%
-      model.matrix(mod) %>%
-      `%*%` (coef(sim[[P(sim)$modelName]])) %>%
-      drop %>% sim[[P(sim)$modelName]]$family$linkinv(.)
+    mod[["predictEscapeFun"]] <- function()
+    {
+      formula %>%
+        model.matrix(mod) %>%
+        `%*%` (coef(sim[[P(sim)$modelObjName]])) %>%
+        drop %>% sim[[P(sim)$modelObjName]]$family$linkinv(.)
+    }
   } 
   else if (all(unlist(lapply(allxy, function(x) is(mod[[x]], "RasterLayer"))))) 
   {
-    sim$fireSense_EscapePredicted <- mget(allxy, envir = mod, inherits = FALSE) %>%
-        stack %>% predict(model = formula, fun = escapePredictRaster, na.rm = TRUE, sim = sim)
+    mod[["predictEscapeFun"]] <- function()
+    {
+      mget(allxy, envir = mod, inherits = FALSE) %>%
+        stack %>% predict(model = formula, fun = escapePredictRaster, na.rm = TRUE, sim = sim)  
+    }
   } 
   else 
   {
@@ -192,9 +193,20 @@ escapePredictRun <- function(sim)
     else 
     {
       stop(moduleName, "> '", paste(allxy[which(!badClass)], collapse = "', '"),
-           "' does not match a data.frame's column, a RasterLayer or a RasterStack's layer.")
+           "' does not match a data.frame's column, a RasterLayer or a layer from a RasterStack or RasterBrick.")
     }
   }
+  
+  invisible(sim)
+}
+
+
+escapePredictRun <- function(sim)
+{
+  currentTime <- time(sim, timeunit(sim))
+  endTime <- end(sim, timeunit(sim))
+  
+  sim[["fireSense_EscapePredicted"]] <- mod[["predictEscapeFun"]]()
   
   if (!is.na(P(sim)$.runInterval))
     sim <- scheduleEvent(sim, currentTime + P(sim)$.runInterval, moduleName, "run")
