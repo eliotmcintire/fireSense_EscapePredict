@@ -29,9 +29,7 @@ defineModule(sim, list(
                             variables present in the model formula. `data`
                             objects can be data.frames, RasterStacks or
                             RasterLayers. However, data.frames cannot be mixed
-                            with objects of other classes. If variables are not 
-                            found in `data` objects, they are searched in the
-                            `simList` environment."),
+                            with objects of other classes."),
     defineParameter(name = "mapping", class = "character, list", default = NULL,
                     desc = "optional named vector or list of character strings
                             mapping one or more variables in the model formula
