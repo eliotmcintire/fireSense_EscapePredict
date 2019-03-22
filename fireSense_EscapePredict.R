@@ -73,7 +73,9 @@ defineModule(sim, list(
 
 doEvent.fireSense_EscapePredict = function(sim, eventTime, eventType, debug = FALSE)
 {
-  switch(
+  moduleName <- current(sim)$moduleName
+  
+    switch(
     eventType,
     init = {
       sim <- escapePredictInit(sim) 
@@ -83,8 +85,18 @@ doEvent.fireSense_EscapePredict = function(sim, eventTime, eventType, debug = FA
       if (!is.na(P(sim)$.saveInitialTime))
         sim <- scheduleEvent(sim, P(sim)$.saveInitialTime, moduleName, "save", .last())
     },
-    run = { sim <- escapePredictRun(sim) },
-    save = { sim <- escapePredictSave(sim) },
+    run = { 
+      sim <- escapePredictRun(sim) 
+      
+      if (!is.na(P(sim)$.runInterval))
+        sim <- scheduleEvent(sim, time(sim) + P(sim)$.runInterval, moduleName, "run")
+    },
+    save = { 
+      sim <- escapePredictSave(sim) 
+      
+      if (!is.na(P(sim)$.saveInterval))
+        sim <- scheduleEvent(sim, time(sim) + P(sim)$.saveInterval, moduleName, "save", .last())
+    },
     warning(paste("Undefined event type: '", current(sim)[1, "eventType", with = FALSE],
                   "' in module '", current(sim)[1, "moduleName", with = FALSE], "'", sep = ""))
   )
@@ -201,13 +213,7 @@ escapePredictInit <- function(sim)
 
 escapePredictRun <- function(sim)
 {
-  currentTime <- time(sim, timeunit(sim))
-  endTime <- end(sim, timeunit(sim))
-  
   sim[["fireSense_EscapePredicted"]] <- mod[["predictEscapeFun"]]()
-  
-  if (!is.na(P(sim)$.runInterval))
-    sim <- scheduleEvent(sim, currentTime + P(sim)$.runInterval, moduleName, "run")
   
   invisible(sim)
 }
@@ -222,9 +228,6 @@ escapePredictSave <- function(sim)
     sim$fireSense_EscapePredicted, 
     file = file.path(paths(sim)$out, paste0("fireSense_EscapePredicted_", timeUnit, currentTime, ".rds"))
   )
-  
-  if (!is.na(P(sim)$.saveInterval))
-    sim <- scheduleEvent(sim, currentTime + P(sim)$.saveInterval, moduleName, "save", .last())
   
   invisible(sim)
 }
