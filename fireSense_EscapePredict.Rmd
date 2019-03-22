@@ -26,7 +26,7 @@ downloadModule(moduleName, path = spadesModulesDirectory)
 Name|Default|Description
 ----|:-------|---------------------------------------------------------------------
 `modelObjName`|`"fireSense_EscapeFitted"`|name of the object of class fireSense_EscapeFit describing the statistical model used for predictions.
-`data`|`"dataFireSense_EscapePredict"`|a character vector indicating the names of objects in the `simList` environment in which to look for variables present in the model formula. `data` objects can be data.frames, RasterStacks or RasterLayers. However, data.frames cannot be mixed with objects of other classes.
+`data`|`"dataFireSense_EscapePredict"`|a character vector indicating the names of objects in the `simList` environment in which to look for variables present in the model formula. `data` objects can be data.frames, RasterLayers, RasterStacks or RasterBricks. However, data.frames cannot be mixed with objects of other classes.
 `mapping`|`NULL`|optional named vector or list of character strings mapping one or more variables in the model formula to those in `data` objects.
 `.runInitialTime`|`start(simList)`|when to start this module? By default, the start time of the simulation.
 `.runInterval`|`NA`|optional. Interval between two runs of this module, expressed in units of simulation time.
@@ -113,7 +113,7 @@ Events are scheduled as follows:
 # Data dependencies
 ## Input data
 - **fireSense_EscapeFitted**: an object of class `fireSense_EscapeFit` created with the fireSense_EscapeFit module.
-- **dataFireSense_EscapePredict**: one or more data.frames, RasterLayers or RasterStacks in which to look for variables with which to predict.
+- **dataFireSense_EscapePredict**: one or more data.frames, RasterLayers, RasterStacks or RasterBricks in which to look for variables with which to predict.
 
 ## Output data
 - **fireSense_EscapePredicted**: an object whose class depends on those in input:
@@ -121,7 +121,7 @@ Events are scheduled as follows:
 Input object class | Output object class
 :-:|:-:
 `data.frame` | `Numeric vector`
-`RasterLayer`<br>`RasterStack` | `RasterLayer`
+`RasterLayer`<br>`RasterStack`<br>`RasterBrick` | `RasterLayer`
 ||
 
 
