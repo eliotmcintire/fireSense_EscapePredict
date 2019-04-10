@@ -78,8 +78,6 @@ doEvent.fireSense_EscapePredict = function(sim, eventTime, eventType, debug = FA
     switch(
     eventType,
     init = {
-      sim <- escapePredictInit(sim) 
-      
       sim <- scheduleEvent(sim, eventTime = P(sim)$.runInitialTime, current(sim)$moduleName, "run")
       
       if (!is.na(P(sim)$.saveInitialTime))
@@ -109,8 +107,7 @@ doEvent.fireSense_EscapePredict = function(sim, eventTime, eventType, debug = FA
 #   - `modulenameInit()` function is required for initiliazation;
 #   - keep event functions short and clean, modularize by calling subroutines from section below.
 
-### template initialization
-escapePredictInit <- function(sim)
+escapePredictRun <- function(sim)
 {
   moduleName <- current(sim)$moduleName
   
@@ -207,12 +204,6 @@ escapePredictInit <- function(sim)
     }
   }
   
-  invisible(sim)
-}
-
-
-escapePredictRun <- function(sim)
-{
   sim[["fireSense_EscapePredicted"]] <- mod[["predictEscapeFun"]]()
   
   invisible(sim)
