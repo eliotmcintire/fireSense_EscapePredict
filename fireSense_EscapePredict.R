@@ -126,21 +126,23 @@ escapePredictRun <- function(sim)
   # Load inputs in the data container
   # list2env(as.list(envir(sim)), envir = mod)
   
+  mod_env <- new.env()
+  
   for (x in P(sim)$data) 
   {
     if (!is.null(sim[[x]]))
     {
       if (is.data.frame(sim[[x]]))
       {
-        list2env(sim[[x]], envir = mod)
+        list2env(sim[[x]], envir = mod_env)
       } 
       else if (is(sim[[x]], "RasterStack") || is(sim[[x]], "RasterBrick")) 
       {
-        list2env(setNames(unstack(sim[[x]]), names(sim[[x]])), envir = mod)
+        list2env(setNames(unstack(sim[[x]]), names(sim[[x]])), envir = mod_env)
       }
       else if (is(sim[[x]], "RasterLayer"))
       {
-        mod[[x]] <- sim[[x]]
+        mod_env[[x]] <- sim[[x]]
       } 
       else stop(moduleName, "> '", x, "' is not a data.frame, a RasterLayer, a RasterStack or a RasterBrick.")
     }
@@ -149,7 +151,7 @@ escapePredictRun <- function(sim)
   terms <- delete.response(terms.formula(sim[[P(sim)$modelObjName]]$formula))
   
   ## Mapping variables names to data
-  if (!is.null(P(sim)$mapping)) 
+  if (!is.null(P(sim)$mapping))
   {
     for (i in 1:length(P(sim)$mapping)) 
     {
@@ -164,34 +166,34 @@ escapePredictRun <- function(sim)
   formula <- reformulate(attr(terms, "term.labels"), intercept = attr(terms, "intercept"))
   allxy <- all.vars(formula)
   
-  if (all(unlist(lapply(allxy, function(x) is.vector(mod[[x]]))))) 
+  if (all(unlist(lapply(allxy, function(x) is.vector(mod_env[[x]]))))) 
   {
-    mod[["predictEscapeFun"]] <- function()
+    mod_env[["predictEscapeFun"]] <- function()
     {
       formula %>%
-        model.matrix(mod) %>%
+        model.matrix(mod_env) %>%
         `%*%` (coef(sim[[P(sim)$modelObjName]])) %>%
         drop %>% sim[[P(sim)$modelObjName]]$family$linkinv(.)
     }
   } 
-  else if (all(unlist(lapply(allxy, function(x) is(mod[[x]], "RasterLayer"))))) 
+  else if (all(unlist(lapply(allxy, function(x) is(mod_env[[x]], "RasterLayer"))))) 
   {
-    mod[["predictEscapeFun"]] <- function()
+    mod_env[["predictEscapeFun"]] <- function()
     {
-      mget(allxy, envir = mod, inherits = FALSE) %>%
+      mget(allxy, envir = mod_env, inherits = FALSE) %>%
         stack %>% predict(model = formula, fun = escapePredictRaster, na.rm = TRUE, sim = sim)  
     }
   } 
   else 
   {
-    missing <- !allxy %in% ls(mod, all.names = TRUE)
+    missing <- !allxy %in% ls(mod_env, all.names = TRUE)
     
     if (s <- sum(missing))
       stop(moduleName, "> '", allxy[missing][1L], "'",
            if (s > 1) paste0(" (and ", s-1L, " other", if (s>2) "s", ")"),
            " not found in data objects.")
     
-    badClass <- unlist(lapply(allxy, function(x) is.vector(mod[[x]]) || is(mod[[x]], "RasterLayer")))
+    badClass <- unlist(lapply(allxy, function(x) is.vector(mod_env[[x]]) || is(mod_env[[x]], "RasterLayer")))
     
     if (any(badClass)) 
     {
@@ -204,7 +206,7 @@ escapePredictRun <- function(sim)
     }
   }
   
-  sim[["fireSense_EscapePredicted"]] <- mod[["predictEscapeFun"]]()
+  sim[["fireSense_EscapePredicted"]] <- mod_env[["predictEscapeFun"]]()
   
   invisible(sim)
 }
