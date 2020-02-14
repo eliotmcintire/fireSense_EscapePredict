@@ -181,7 +181,7 @@ escapePredictRun <- function(sim)
     mod_env[["predictEscapeFun"]] <- function()
     {
       mget(allxy, envir = mod_env, inherits = FALSE) %>%
-        stack %>% predict(model = formula, fun = escapePredictRaster, na.rm = TRUE, sim = sim)  
+        stack %>% raster::predict(model = formula, fun = escapePredictRaster, na.rm = TRUE, sim = sim)  
     }
   } 
   else 
