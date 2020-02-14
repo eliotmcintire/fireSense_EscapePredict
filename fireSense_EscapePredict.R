@@ -14,7 +14,7 @@ defineModule(sim, list(
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = list("README.txt", "fireSense_EscapePredict.Rmd"),
-  reqdPkgs = list("magrittr", "raster"),
+  reqdPkgs = list("magrittr", "raster", "stats"),
   parameters = rbind(
     #defineParameter("paramName", "paramClass", value, min, max, "parameter description"),
     defineParameter(name = "modelObjName", class = "character", 
