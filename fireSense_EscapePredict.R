@@ -14,6 +14,7 @@ defineModule(sim, list(
   timeunit = "year",
   citation = list("citation.bib"),
   documentation = list("README.txt", "fireSense_EscapePredict.Rmd"),
+  loadOrder = list(after = "fireSense_dataPrepPredict"),
   reqdPkgs = list("magrittr", "raster", "stats"),
   parameters = bindrows(
     defineParameter(name = ".runInitialTime", class = "numeric", default = start(sim),
@@ -34,11 +35,11 @@ defineModule(sim, list(
                  desc = "An object of class fireSense_EscapeFit created with the fireSense_EscapeFit module."),
     expectsInput(objectName = "fireSense_IgnitionAndEscapeCovariates", objectClass = "data.frame",
                  desc = "An object of class RasterStack or data.frame with prediction variables"),
-    expectsInput(objectName = "flammableRTM", objectClass = "RasterLayer",
-                 desc = "a raster with values of 1 for every flammable pixel")
+    expectsInput(objectName = "flammableRTM", objectClass = "SpatRaster",
+                 desc = "a raster with values of 1 for flammable pixels and 0 for nonflammable pixels")
   ),
   outputObjects = bindrows(
-    createsOutput(objectName = "fireSense_EscapePredicted", objectClass = "RasterLayer",
+    createsOutput(objectName = "fireSense_EscapePredicted", objectClass = "SpatRaster",
                   desc = "A raster with values representing escape probability")
   )
 ))
@@ -74,10 +75,10 @@ doEvent.fireSense_EscapePredict = function(sim, eventTime, eventType, debug = FA
 }
 
 escapePredictRun <- function(sim) {
-
+  
   EscapeCovariates <- copy(sim$fireSense_IgnitionAndEscapeCovariates)
   moduleName <- currentModule(sim)
-
+  
   ## Toolbox: set of functions used internally by escapePredictRun
   escapePredictRaster <- function(model, data, sim) {
     model %>%
@@ -85,18 +86,18 @@ escapePredictRun <- function(sim) {
       `%*%` (coef(sim$fireSense_EscapeFitted)) %>%
       drop %>% sim$fireSense_EscapeFitted$family$linkinv(.)
   }
-
+  
   # Load inputs in the data container
   # list2env(as.list(envir(sim)), envir = mod)
-
+  
   mod_env <- new.env(parent = baseenv())
   list2env(EscapeCovariates, env = mod_env)
-
+  
   terms <- delete.response(terms.formula(sim$fireSense_EscapeFitted$formula))
-
+  
   formula <- reformulate(attr(terms, "term.labels"), intercept = attr(terms, "intercept"))
   allxy <- all.vars(formula)
-
+  
   if (all(unlist(lapply(allxy, function(x) is.vector(mod_env[[x]]))))) {
     mod_env[["predictEscapeFun"]] <- function() {
       formula %>%
@@ -105,7 +106,7 @@ escapePredictRun <- function(sim) {
         drop %>% sim$fireSense_EscapeFitted$family$linkinv(.)
     }
   }
-  else if (all(unlist(lapply(allxy, function(x) is(mod_env[[x]], "RasterLayer"))))) {
+  else if (all(unlist(lapply(allxy, function(x) is(mod_env[[x]], "SpatRaster"))))) {
     mod_env[["predictEscapeFun"]] <- function() {
       mget(allxy, envir = mod_env, inherits = FALSE) %>%
         stack %>% raster::predict(model = formula, fun = escapePredictRaster, na.rm = TRUE, sim = sim)
@@ -113,43 +114,36 @@ escapePredictRun <- function(sim) {
   }
   else {
     missing <- !allxy %in% ls(mod_env, all.names = TRUE)
-
+    
     if (s <- sum(missing))
       stop(moduleName, "> '", allxy[missing][1L], "'",
            if (s > 1) paste0(" (and ", s-1L, " other", if (s>2) "s", ")"),
            " not found in data objects.")
-
-    badClass <- unlist(lapply(allxy, function(x) is.vector(mod_env[[x]]) || is(mod_env[[x]], "RasterLayer")))
-
+    
+    badClass <- unlist(lapply(allxy, function(x) is.vector(mod_env[[x]]) || is(mod_env[[x]], "SpatRaster")))
+    
     if (any(badClass)) {
       stop(moduleName, "> Data objects of class 'data.frame' cannot be mixed with objects of other classes.")
     } else    {
       stop(moduleName, "> '", paste(allxy[which(!badClass)], collapse = "', '"),
-           "' does not match a data.frame's column, a RasterLayer or a layer from a RasterStack or RasterBrick.")
+           "' does not match a data.frame's column, a SpatRaster or a layer from a RasterStack or RasterBrick.")
     }
   }
-
+  
   sim[["fireSense_EscapePredicted"]] <- mod_env[["predictEscapeFun"]]()
-
+  
   #force EscapePredicted a raster
-  if (!class(sim$fireSense_EscapePredicted) == "RasterLayer"){
-    EscapeRas <- raster(sim$flammableRTM)
+  if (!inherits(sim$fireSense_EscapePredicted, "SpatRaster")){
+    EscapeRas <- rast(sim$flammableRTM)
     EscapeRas[EscapeCovariates$pixelID] <- sim$fireSense_EscapePredicted
     sim$fireSense_EscapePredicted <- EscapeRas
   }
-
-  invisible(sim)
+  
+  return(invisible(sim))
 }
 
-escapePredictSave <- function(sim) {
-  timeUnit <- timeunit(sim)
-  currentTime <- time(sim, timeUnit)
+.inputObjects <- function(sim) {
 
-  saveRDS(
-    sim$fireSense_EscapePredicted,
-    file = file.path(paths(sim)$out, paste0("fireSense_EscapePredicted_", timeUnit, currentTime, ".rds"))
-  )
-
-  invisible(sim)
+  #TODO: ideally this would retrieve necessary inputObjects  
+  return(invisible(sim))
 }
-
