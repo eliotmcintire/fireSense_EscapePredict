@@ -130,7 +130,7 @@ escapePredictRun <- function(sim) {
     }
   }
   
-  sim[["fireSense_EscapePredicted"]] <- mod_env[["predictEscapeFun"]]()
+  sim$fireSense_EscapePredicted <- mod_env[["predictEscapeFun"]]()
   
   #force EscapePredicted a raster
   if (!inherits(sim$fireSense_EscapePredicted, "SpatRaster")){
@@ -142,7 +142,32 @@ escapePredictRun <- function(sim) {
   return(invisible(sim))
 }
 
-.inputObjects <- function(sim) {
+.inputObjects <- function(sim){
+  
+  if (!suppliedElsewhere("fireSense_IgnitionAndEscapeCovariates", sim) & 
+      !suppliedElsewhere("fireSense_EscapeFitted", sim) &
+      !suppliedElsewhere("flammableRTM", sim)) {
+    
+    ignitions <- c(490, 14, 2)
+    escapes <- c(498, 7, 1)
+    class2 <- runif(n = 506, min = 0, max = 1) * 0.55
+    class3 <- runif(n = 506, min = 0, max = 1) * 0.45
+    nonForest_highFlammable <- 1 - c(class2 + class3)
+    pseudoData <- data.table(ignitions = rep(0:2, times = ignitions),
+                             escapes = rep(0:2, times = escapes), 
+                             class2 = class2, class3 = class3, 
+                             NF_HF = nonForest_highFlammable)
+    pseudoData[, MDC := runif(506, 120, 200)]
+    sim$fireSense_IgnitionAndEscapeCovariates <- pseudoData
+    sim$fireSense_IgnitionAndEscapeCovariates$pixelID <- sample(1:600, size = 506, replace = FALSE)
+    fireSense_EscapeFormula <- "cbind(escapes, ignitions - escapes) ~ MDC + NF_HF + class2 + class3 - 1"
+    sim$fireSense_EscapeFitted <- glm(formula = as.formula(fireSense_EscapeFormula), 
+                                      data = sim$fireSense_IgnitionAndEscapeCovariates, family = "binomial")
+    class(sim$fireSense_EscapeFitted) <- c("fireSense_EscapeFit", "glm", "lm")
+    flammableRTM <- rast(nrow = 30, ncol = 20)
+    flammableRTM[sim$fireSense_IgnitionAndEscapeCovariates$pixelID] <- 1
+    sim$flammableRTM <- flammableRTM
+  }
 
   #TODO: ideally this would retrieve necessary inputObjects  
   return(invisible(sim))
